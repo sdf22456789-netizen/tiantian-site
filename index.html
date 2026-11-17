@@ -472,6 +472,11 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    /* 公開站：節點純展示、不可點 */
+    .graph.is-static .gnode {
+      cursor: default;
+    }
+
     .gnode .dot {
       width: 16px;
       height: 16px;
@@ -983,6 +988,9 @@
       const readout = document.querySelector('#graphReadout .readout-text');
       if (!graph || !svg || !readout) return;
 
+      // 公開站（GitHub Pages）不提供 obsidian:// 連結，節點改為純展示
+      const IS_PUBLIC = /(^|\.)github\.io$/.test(location.hostname);
+
       const SVG_NS = 'http://www.w3.org/2000/svg';
       const CX = 50, CY = 50, R = 37;
 
@@ -991,24 +999,29 @@
         'obsidian://open?vault=' + encodeURIComponent(VAULT) + '&file=' + encPath(file);
 
       function makeNode(n, x, y, isHub) {
-        const a = document.createElement('a');
-        a.className = 'gnode' + (isHub ? ' is-hub' : '');
-        a.href = url('我的資料/' + n.id);
-        a.title = n.id;
-        a.setAttribute('data-sfx-hover', '');
-        a.setAttribute('aria-label', n.id + '：' + n.summary);
-        a.style.left = x + '%';
-        a.style.top = y + '%';
+        const el = document.createElement(IS_PUBLIC ? 'div' : 'a');
+        el.className = 'gnode' + (isHub ? ' is-hub' : '');
+        el.title = n.id;
+        el.setAttribute('data-sfx-hover', '');
+        el.setAttribute('aria-label', n.id + '：' + n.summary);
+        el.style.left = x + '%';
+        el.style.top = y + '%';
+
+        if (IS_PUBLIC) {
+          el.tabIndex = 0; // 純展示仍可用鍵盤聚焦看摘要
+        } else {
+          el.href = url('我的資料/' + n.id);
+        }
 
         const dot = document.createElement('span');
         dot.className = 'dot';
         const label = document.createElement('span');
         label.className = 'glabel';
         label.textContent = n.label;
-        a.append(dot, label);
-        graph.appendChild(a);
-        n.el = a;
-        return a;
+        el.append(dot, label);
+        graph.appendChild(el);
+        n.el = el;
+        return el;
       }
 
       const hubEl = makeNode(HUB, CX, CY, true);
@@ -1081,6 +1094,17 @@
           if (!graph.contains(document.activeElement)) showHub();
         }, 0);
       });
+
+      /* 公開站收尾：不留 obsidian:// 連結與相關提示 */
+      if (IS_PUBLIC) {
+        graph.classList.add('is-static');
+
+        const note = document.querySelector('.about-note');
+        if (note) note.remove();
+
+        const hint = document.querySelector('.graph-hint');
+        if (hint) hint.textContent = '滑過節點 → 檢視摘要';
+      }
     })();
   </script>
 
