@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1A1C2C">
+  <meta name="color-scheme" content="dark">
+  <title>個人簡介 - 田宗恩</title>
+
+  <!-- 字型：Press Start 2P（標題）/ VT323（內文）/ Silkscreen（UI 標籤）/ Noto Sans TC（中文） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===================================================================
+       復古像素（8-bit / PICO-8）主題
+       -------------------------------------------------------------------
+       所有顏色與字型都集中在 :root 的 CSS 變數，方便統一調整。
+       不使用圓角、不使用平滑漸層、不使用柔邊陰影，
+       所有邊框與陰影皆為「硬邊（hard stop）」像素階梯。
+       =================================================================== */
+
+    :root {
+      /* ---------- 顏色（PICO-8 調色盤） ---------- */
+      --color-bg:             #1A1C2C; /* 頁面底色 */
+      --color-panel:          #333C57; /* 面板底色 */
+      --color-text:           #F4F4F4; /* 主要文字 */
+      --color-accent-yellow:  #FFCD75; /* 強調色：黃 */
+      --color-accent-green:   #38B764; /* 強調色：綠（HP 血量） */
+      --color-accent-orange:  #EF7D57; /* 強調色：橘 */
+
+      /* ---------- 由主色衍生的像素邊框/輔助色 ---------- */
+      --color-ink:            #0D0F1A; /* 面板外框（近黑） */
+      --color-edge-hi:        #4C5780; /* 面板左上亮邊 */
+      --color-edge-lo:        #232A41; /* 面板右下暗邊 */
+      --color-muted:          #C3CADD; /* 次要文字 */
+      --color-hp-track:       #1B2033; /* 血條底槽 */
+      --color-hp-shine:       rgba(255, 255, 255, 0.3); /* 血條上方亮塊 */
+      --color-btn-face:       #FFCD75; /* 按鈕表面 */
+      --color-btn-hi:         #FFE6B0; /* 按鈕高光 */
+      --color-btn-lo:         #D9A24E; /* 按鈕下緣 */
+      --color-scanline:       rgba(0, 0, 0, 0.6); /* CRT 掃描線 */
+      --color-select:         #38B764; /* 選取文字底色 */
+      --color-edge-hi-hover:  #6F7CAE; /* 面板 hover 亮邊 */
+      --color-hp-hover:       #5FD98A; /* 血條 hover 亮綠 */
+      --color-sfx-on:         #38B764; /* 音效開啟圖示 */
+      --color-sfx-off:        #EF7D57; /* 音效關閉圖示 */
+
+      /* ---------- 字型 ---------- */
+      --font-display: "Press Start 2P", "Noto Sans TC", monospace;
+      --font-body:    "VT323", "Noto Sans TC", monospace;
+      --font-ui:      "Silkscreen", "Noto Sans TC", monospace;
+      --font-cjk:     "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+
+      /* ---------- 像素尺寸 ---------- */
+      --px:      4px;  /* 粗像素邊框 */
+      --px-thin: 2px;  /* 細像素線 */
+      --tap:     44px; /* 最小觸控高度 */
+    }
+
+    /* 基本重設：一律無圓角、無多餘間距、防止左右捲動 */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden; /* 防止左右捲動 */
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 19px; /* VT323 字身較小，維持 ≥16px 的可讀性 */
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* CRT 掃描線覆蓋層：極淡、固定於視窗、不攔截點擊 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      pointer-events: none;
+      opacity: 0.22;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        var(--color-scanline) 0,
+        var(--color-scanline) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+    }
+
+    /* 選取文字的顏色也走像素風 */
+    ::selection {
+      background-color: var(--color-select);
+      color: var(--color-ink);
+    }
+
+    /* ---------- 版面容器（手機優先 375px） ---------- */
+    .container {
+      width: 100%;
+      max-width: 100%;
+      padding: 20px 16px 36px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        max-width: 744px;
+        padding: 40px 24px 56px;
+      }
+    }
+
+    /* ===================================================================
+       HUD：音效開關（像素按鈕，44×44 觸控目標）
+       =================================================================== */
+    .hud {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .sfx-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--tap);
+      height: var(--tap);
+      min-width: var(--tap);
+      min-height: var(--tap);
+      padding: 0;
+      background-color: var(--color-panel);
+      color: var(--color-sfx-on);
+      border: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow:
+        0 0 0 var(--px-thin) var(--color-ink),
+        0 3px 0 0 var(--color-ink),
+        inset var(--px-thin) var(--px-thin) 0 0 var(--color-edge-hi),
+        inset calc(-1 * var(--px-thin)) calc(-1 * var(--px-thin)) 0 0 var(--color-edge-lo);
+      transition: transform 80ms steps(1, end), box-shadow 80ms steps(1, end), color 80ms steps(1, end);
+    }
+
+    .sfx-toggle:active {
+      transform: translateY(2px);
+      box-shadow:
+        0 0 0 var(--px-thin) var(--color-ink),
+        0 1px 0 0 var(--color-ink);
+    }
+
+    .sfx-toggle.is-muted {
+      color: var(--color-sfx-off);
+    }
+
+    /* 用 CSS 切換喇叭聲波 / 打叉的像素圖 */
+    .sfx-icon .xmark,
+    .sfx-toggle.is-muted .wave {
+      display: none;
+    }
+
+    .sfx-toggle.is-muted .xmark {
+      display: inline;
+    }
+
+    /* ===================================================================
+       像素面板（遊戲對話框）
+       外框：四向 box-shadow 疊出的 4px 硬邊黑框
+       內緣：左上亮邊 / 右下暗邊，做出 8-bit 立體感
+       =================================================================== */
+    .panel {
+      /* 邊框色抽成區域變數，方便 :hover 切換成別的顏色 */
+      --edge-hi: var(--color-edge-hi);
+      --edge-lo: var(--color-edge-lo);
+      position: relative;
+      background-color: var(--color-panel);
+      color: var(--color-text);
+      padding: 18px 16px;
+      box-shadow:
+        0 calc(-1 * var(--px)) 0 0 var(--color-ink),
+        0 var(--px) 0 0 var(--color-ink),
+        calc(-1 * var(--px)) 0 0 0 var(--color-ink),
+        var(--px) 0 0 0 var(--color-ink),
+        inset 0 var(--px) 0 0 var(--edge-hi),
+        inset var(--px) 0 0 0 var(--edge-hi),
+        inset 0 calc(-1 * var(--px)) 0 0 var(--edge-lo),
+        inset calc(-1 * var(--px)) 0 0 0 var(--edge-lo);
+      transition: box-shadow 120ms steps(2, end), transform 120ms steps(2, end);
+    }
+
+    @media (min-width: 768px) {
+      .panel {
+        padding: 24px 24px;
+      }
+    }
+
+    /* ---------- 各區塊外距 ---------- */
+    section {
+      margin-bottom: 28px;
+    }
+
+    /* ---------- 標題 ---------- */
+    h1 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      line-height: 1.5;
+      letter-spacing: 2px;
+      color: var(--color-text);
+      text-shadow: 3px 3px 0 var(--color-ink); /* 硬邊陰影，非柔邊 */
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-size: 17px;
+      line-height: 1.5;
+      letter-spacing: 1px;
+      color: var(--color-accent-yellow);
+      margin-bottom: 14px;
+    }
+
+    /* 標題前的像素方塊 */
+    h2::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 10px;
+      height: 10px;
+      background-color: var(--color-accent-green);
+      box-shadow: 0 0 0 var(--px-thin) var(--color-ink);
+    }
+
+    /* 標題後方的像素橫線 */
+    h2::after {
+      content: "";
+      flex: 1 1 auto;
+      height: var(--px);
+      background-color: var(--color-edge-lo);
+    }
+
+    @media (min-width: 768px) {
+      h1 { font-size: 32px; }
+      h2 { font-size: 19px; }
+    }
+
+    /* ===================================================================
+       Hero：名字 + 一句介紹（遊戲開場對話框）
+       =================================================================== */
+    .hero {
+      text-align: center;
+      padding: 24px 16px 26px;
+      margin-bottom: 28px;
+    }
+
+    .hero .tag {
+      display: inline-block;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      line-height: 1.4;
+      letter-spacing: 1px;
+      color: var(--color-accent-yellow);
+      background-color: var(--color-ink);
+      padding: 7px 10px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 0 var(--px-thin) var(--color-edge-hi);
+    }
+
+    .hero p.tagline {
+      font-size: 19px;
+      color: var(--color-text);
+      margin-top: 6px;
+      overflow-wrap: anywhere;
+    }
+
+    /* 介紹文字後方的閃爍方塊游標 */
+    .cursor {
+      display: inline-block;
+      width: 0.55em;
+      height: 1em;
+      margin-left: 3px;
+      background-color: var(--color-accent-yellow);
+      vertical-align: -0.15em;
+      animation: pixel-blink 1.1s steps(1, end) infinite;
+    }
+
+    @keyframes pixel-blink {
+      0%,
+      49%   { opacity: 1; }
+      50%,
+      100%  { opacity: 0; }
+    }
+
+    /* ===================================================================
+       關於我
+       =================================================================== */
+    .about-info p {
+      color: var(--color-muted);
+      overflow-wrap: anywhere;
+    }
+
+    .about-info p + p {
+      margin-top: 12px;
+    }
+
+    /* ===================================================================
+       會的東西：方塊血量條（HP bar）
+       =================================================================== */
+    .skills-list {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .skill-item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      align-items: center;
+      gap: 12px;
+      min-height: var(--tap); /* 觸控友善高度 */
+    }
+
+    .skill-name {
+      font-family: var(--font-ui);
+      font-size: 16px;
+      letter-spacing: 1px;
+      color: var(--color-accent-yellow);
+    }
+
+    /* 血條底槽 */
+    .hp {
+      --hp-fill: 60%; /* 5 格中亮 3 格 */
+      position: relative;
+      display: block;
+      height: 18px;
+      background-color: var(--color-hp-track);
+      box-shadow: 0 0 0 var(--px-thin) var(--color-ink);
+      overflow: hidden;
+    }
+
+    /* 血量（綠色方塊） */
+    .hp-fill {
+      position: absolute;
+      top: var(--px-thin);
+      bottom: var(--px-thin);
+      left: var(--px-thin);
+      width: calc(var(--hp-fill) - var(--px-thin));
+      background-color: var(--color-accent-green);
+      box-shadow: inset 0 var(--px-thin) 0 0 var(--color-hp-shine);
+    }
+
+    /* 用底槽色切出 5 個方格（硬邊，不是漸層） */
+    .hp::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        to right,
+        transparent 0,
+        transparent calc(20% - var(--px-thin)),
+        var(--color-hp-track) calc(20% - var(--px-thin)),
+        var(--color-hp-track) 20%
+      );
+    }
+
+    /* ===================================================================
+       做過的事
+       =================================================================== */
+    .experience-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .experience-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+    }
+
+    .exp-card {
+      transition: transform 100ms steps(2, end), box-shadow 120ms steps(2, end);
+    }
+
+    .exp-card:hover,
+    .exp-card:focus-within {
+      transform: translateY(-2px);
+    }
+
+    .exp-card h3 {
+      font-family: var(--font-display);
+      font-size: 15px;
+      line-height: 1.7;
+      letter-spacing: 0.5px;
+      color: var(--color-accent-orange);
+      margin-bottom: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .exp-card .exp-desc {
+      color: var(--color-muted);
+      font-size: 19px;
+      overflow-wrap: anywhere;
+    }
+
+    /* ===================================================================
+       節點圖（Graph View）：像素化節點 + 連線
+       =================================================================== */
+    .graph-panel {
+      padding: 16px 12px 14px;
+    }
+
+    .graph {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      aspect-ratio: 1 / 1;
+    }
+
+    .graph-edges {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .graph-edges line {
+      stroke: var(--color-edge-hi);
+      stroke-width: 2px;
+      vector-effect: non-scaling-stroke;
+      transition: stroke 80ms steps(1, end), stroke-width 80ms steps(1, end);
+    }
+
+    .graph-edges line.is-on {
+      stroke: var(--color-accent-yellow);
+      stroke-width: 3px;
+    }
+
+    /* 節點：外層 44×44 觸控區，內層 14×14 像素方塊 */
+    .gnode {
+      position: absolute;
+      width: var(--tap);
+      height: var(--tap);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translate(-50%, -50%);
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .gnode .dot {
+      width: 16px;
+      height: 16px;
+      background-color: var(--color-panel);
+      box-shadow:
+        0 0 0 var(--px-thin) var(--color-ink),
+        inset var(--px-thin) var(--px-thin) 0 0 var(--color-edge-hi),
+        inset calc(-1 * var(--px-thin)) calc(-1 * var(--px-thin)) 0 0 var(--color-edge-lo);
+      transition: background-color 80ms steps(1, end), box-shadow 80ms steps(1, end);
+    }
+
+    .gnode .glabel {
+      position: absolute;
+      top: calc(50% + 14px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 1px 3px;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      line-height: 1.35;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      color: var(--color-text);
+      background-color: var(--color-panel);
+      box-shadow: 0 0 0 3px var(--color-panel); /* 遮住通過標籤的連線 */
+      pointer-events: none;
+    }
+
+    /* 中心節點（我的資料） */
+    .gnode.is-hub .dot {
+      width: 22px;
+      height: 22px;
+      background-color: var(--color-accent-green);
+      box-shadow:
+        0 0 0 var(--px-thin) var(--color-ink),
+        inset var(--px-thin) var(--px-thin) 0 0 var(--color-hp-hover),
+        inset calc(-1 * var(--px-thin)) calc(-1 * var(--px-thin)) 0 0 var(--color-accent-green);
+    }
+
+    .gnode.is-hub .glabel {
+      font-size: 11px;
+      color: var(--color-accent-yellow);
+    }
+
+    /* 作用中：其他節點變暗，滑鼠指到的那個亮起來 */
+    .graph.has-active .gnode:not(.is-on) {
+      opacity: 0.35;
+    }
+
+    .gnode.is-on .dot {
+      background-color: var(--color-accent-yellow);
+      box-shadow:
+        0 0 0 var(--px-thin) var(--color-ink),
+        inset 0 var(--px-thin) 0 0 var(--color-btn-hi),
+        inset 0 calc(-1 * var(--px-thin)) 0 0 var(--color-btn-lo);
+    }
+
+    .gnode.is-on .glabel {
+      color: var(--color-ink);
+      background-color: var(--color-accent-yellow);
+    }
+
+    /* 節點資訊列（遊戲對話框讀取條） */
+    .graph-readout {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 10px 12px;
+      min-height: 44px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.45;
+      color: var(--color-accent-yellow);
+      background-color: var(--color-ink);
+      box-shadow: inset 0 0 0 var(--px-thin) var(--color-edge-lo);
+    }
+
+    .graph-readout .readout-arrow {
+      flex: 0 0 auto;
+      color: var(--color-accent-green);
+      animation: pixel-blink 1.1s steps(1, end) infinite;
+    }
+
+    .graph-hint {
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: center;
+      color: var(--color-muted);
+    }
+
+    /* ===================================================================
+       聯絡我：遊戲按鈕（按下時下沉 2px）
+       =================================================================== */
+    .contact-section {
+      text-align: center;
+      margin-top: 32px;
+      margin-bottom: 8px;
+    }
+
+    .btn-contact {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 320px;
+      min-height: 56px; /* > 44px 觸控目標 */
+      padding: 0 24px;
+      font-family: var(--font-ui);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--color-ink);
+      background-color: var(--color-btn-face);
+      text-decoration: none;
+      border: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow:
+        0 0 0 var(--px) var(--color-ink),
+        0 6px 0 0 var(--color-ink),
+        inset 0 var(--px) 0 0 var(--color-btn-hi),
+        inset 0 calc(-1 * var(--px)) 0 0 var(--color-btn-lo);
+      transition: transform 80ms steps(1, end), box-shadow 80ms steps(1, end);
+    }
+
+    .btn-contact:hover {
+      background-color: var(--color-btn-hi);
+    }
+
+    /* 按下：整體下沉 2px，底部厚邊收窄 */
+    .btn-contact:active {
+      transform: translateY(2px);
+      box-shadow:
+        0 0 0 var(--px) var(--color-ink),
+        0 4px 0 0 var(--color-ink),
+        inset 0 calc(-1 * var(--px)) 0 0 var(--color-btn-lo);
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: var(--px) solid var(--color-accent-green);
+      outline-offset: 6px;
+    }
+
+    /* ===================================================================
+       圖片 / 影片：像素化、不超出螢幕
+       =================================================================== */
+    img,
+    video {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      -ms-interpolation-mode: nearest-neighbor;
+    }
+
+    /* ===================================================================
+       「關於我」面板內的 Obsidian 筆記入口（obsidian:// 深層連結）
+       =================================================================== */
+    .about-note {
+      margin-top: 16px;
+    }
+
+    .link-pixel {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--tap);
+      padding: 0 14px;
+      font-family: var(--font-ui);
+      font-size: 15px;
+      letter-spacing: 1px;
+      color: var(--color-accent-yellow);
+      background-color: var(--color-ink);
+      text-decoration: none;
+      box-shadow: 0 0 0 var(--px-thin) var(--color-edge-hi);
+      transition: transform 80ms steps(1, end), color 80ms steps(1, end),
+                  background-color 80ms steps(1, end), box-shadow 80ms steps(1, end);
+    }
+
+    .link-pixel:active {
+      transform: translateY(2px);
+    }
+
+    /* ===================================================================
+       Hover 回饋（只在有滑鼠的裝置啟用，避免手機殘留 hover 狀態）
+       =================================================================== */
+    @media (hover: hover) and (pointer: fine) {
+      /* 面板：內框亮邊變亮 */
+      .panel:hover {
+        --edge-hi: var(--color-edge-hi-hover);
+      }
+
+      /* 經歷卡片：邊框轉橘 */
+      .exp-card:hover {
+        --edge-hi: var(--color-accent-orange);
+        --edge-lo: var(--color-accent-orange);
+      }
+
+      /* 技能列：標籤轉綠、血條外框轉黃、血量變亮 */
+      .skill-item:hover .skill-name {
+        color: var(--color-accent-green);
+      }
+
+      .skill-item:hover .hp {
+        box-shadow: 0 0 0 var(--px-thin) var(--color-accent-yellow);
+      }
+
+      .skill-item:hover .hp-fill {
+        background-color: var(--color-hp-hover);
+      }
+
+      /* 音效鈕：表面亮邊變亮（:not(:active) 避免蓋掉按下狀態） */
+      .sfx-toggle:hover:not(:active) {
+        box-shadow:
+          0 0 0 var(--px-thin) var(--color-ink),
+          0 3px 0 0 var(--color-ink),
+          inset var(--px-thin) var(--px-thin) 0 0 var(--color-edge-hi-hover),
+          inset calc(-1 * var(--px-thin)) calc(-1 * var(--px-thin)) 0 0 var(--color-edge-lo);
+      }
+
+      /* Obsidian 連結：黃底反白 */
+      .link-pixel:hover {
+        color: var(--color-ink);
+        background-color: var(--color-accent-yellow);
+        box-shadow: 0 0 0 var(--px-thin) var(--color-ink);
+      }
+    }
+
+    /* 尊重「減少動態」偏好 */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="container">
+
+    <!-- HUD：音效開關 -->
+    <div class="hud">
+      <button type="button" class="sfx-toggle" id="sfxToggle" aria-label="音效開關" aria-pressed="true" title="音效開關">
+        <svg class="sfx-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" shape-rendering="crispEdges" fill="currentColor">
+          <rect x="1" y="6" width="3" height="4"/>
+          <rect x="4" y="4" width="2" height="8"/>
+          <rect x="6" y="2" width="2" height="12"/>
+          <g class="wave">
+            <rect x="10" y="6" width="1" height="4"/>
+            <rect x="12" y="4" width="1" height="8"/>
+          </g>
+          <g class="xmark">
+            <rect x="9" y="4" width="2" height="2"/>
+            <rect x="11" y="6" width="2" height="2"/>
+            <rect x="13" y="8" width="2" height="2"/>
+            <rect x="13" y="4" width="2" height="2"/>
+            <rect x="9" y="8" width="2" height="2"/>
+          </g>
+        </svg>
+      </button>
+    </div>
+
+    <!-- 順序 1: 名字 ＋ 一句話介紹 -->
+    <header class="hero panel">
+      <span class="tag">開南大學 資訊管理系 大二</span>
+      <h1>田宗恩</h1>
+      <p class="tagline">「熱愛遊戲與技術，目標成為遊戲開發與網路工程師。」<span class="cursor" aria-hidden="true"></span></p>
+    </header>
+
+    <!-- 順序 2: 關於我 -->
+    <section>
+      <h2>關於我</h2>
+      <div class="about-info panel">
+        <p>科系：開南大學 資訊管理系 大學二年級 (預計 2028 年畢業)</p>
+        <p>自我介紹：因為喜歡玩電腦而選擇資訊管理系。我個性內向、專注力高，擅長獨立思考與解決問題。平時喜歡玩 Apex、Valorant 等射擊遊戲，並保持運動習慣。未來的目標是成為一名遊戲開發工程師，或是能獨立維護伺服器穩定的網路工程師，致力於做出讓玩家有順暢體驗的產品。</p>
+        <p class="about-note"><a href="obsidian://open?vault=%E7%B6%B2%E9%A0%81&amp;file=%E6%88%91%E7%9A%84%E8%B3%87%E6%96%99" class="link-pixel" data-sfx-hover title="在 Obsidian 開啟">▸ 開啟 Obsidian 筆記</a></p>
+      </div>
+    </section>
+
+    <!-- 順序 3: 會的東西 -->
+    <section>
+      <h2>會的東西</h2>
+      <ul class="skills-list panel">
+        <li class="skill-item" data-sfx-hover>
+          <span class="skill-name">C++</span>
+          <span class="hp" aria-hidden="true"><span class="hp-fill"></span></span>
+        </li>
+        <li class="skill-item" data-sfx-hover>
+          <span class="skill-name">Linux</span>
+          <span class="hp" aria-hidden="true"><span class="hp-fill"></span></span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 順序 4: 做過的事 -->
+    <section>
+      <h2>做過的事</h2>
+      <div class="experience-grid">
+        <!-- 經歷 1 -->
+        <div class="exp-card panel" data-sfx-hover>
+          <h3>1. 校內展館志工</h3>
+          <p class="exp-desc">負責校內展館的看管與維護服務。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 順序 5: 節點圖 -->
+    <section>
+      <h2>節點圖</h2>
+      <div class="graph-panel panel">
+        <div class="graph" id="graph" aria-label="筆記節點圖">
+          <svg class="graph-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+        <p class="graph-readout" id="graphReadout">
+          <span class="readout-arrow" aria-hidden="true">▶</span>
+          <span class="readout-text">我的資料 — 熱愛遊戲與技術，目標成為遊戲開發與網路工程師。</span>
+        </p>
+        <p class="graph-hint">點擊節點 → 在 Obsidian 開啟</p>
+      </div>
+    </section>
+
+    <!-- 順序 6: 聯絡我按鈕 -->
+    <section class="contact-section">
+      <a href="mailto:sdf22456789@gmail.com" class="btn-contact" data-sfx-hover data-sfx="mail">聯絡我</a>
+    </section>
+
+  </main>
+
+  <script>
+    /* =================================================================
+       8-bit 音效引擎
+       - 全部用 Web Audio 即時合成方波，不需要任何音檔
+       - 瀏覽器自動播放政策：第一次點擊 / 按鍵後才會出聲
+       - 手機（無 hover）不播 hover 音，避免誤觸連發
+       ================================================================= */
+    (() => {
+      'use strict';
+
+      const VOLUME = 0.07;                                   // 主音量（偏低，不嚇人）
+      const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      const toggle = document.getElementById('sfxToggle');
+
+      let ctx = null;
+      let master = null;
+      let muted = false;
+      let lastHover = null;
+      let lastBlipAt = 0;
+      let blipIndex = 0;
+
+      try { muted = localStorage.getItem('sfx-muted') === '1'; } catch (err) { /* 無痕模式忽略 */ }
+
+      /* ---------- 建立 / 喚醒 AudioContext ---------- */
+      function audio() {
+        if (!ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          ctx = new AC();
+          master = ctx.createGain();
+          master.gain.value = muted ? 0 : VOLUME;
+          master.connect(ctx.destination);
+        }
+        if (ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      }
+
+      /* ---------- 單音：方波為主，帶極短音頭 ---------- */
+      function tone(freq, dur, opt) {
+        if (!ctx || muted) return;
+        const o = opt || {};
+        const t0 = ctx.currentTime + (o.delay || 0);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = o.type || 'square';
+        osc.frequency.setValueAtTime(freq, t0);
+        if (o.slide) osc.frequency.exponentialRampToValueAtTime(o.slide, t0 + dur);
+        const peak = (o.gain || 1) * 0.6;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.linearRampToValueAtTime(peak, t0 + 0.006);
+        gain.gain.setValueAtTime(peak, t0 + dur * 0.65);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(t0);
+        osc.stop(t0 + dur + 0.03);
+      }
+
+      /* ---------- 音效集 ---------- */
+      function sfxHover() {                       // 游標掃過：短促高音
+        const now = performance.now();
+        if (now - lastBlipAt < 45) return;        // 快速掃過時不連發
+        lastBlipAt = now;
+        const notes = [1046.5, 1174.7, 1318.5];
+        tone(notes[blipIndex++ % notes.length], 0.045, { gain: 0.45 });
+      }
+
+      function sfxPress() {                       // 按下：下滑音
+        tone(392, 0.06, { slide: 196, gain: 0.7 });
+      }
+
+      function sfxMail() {                        // 開啟郵件：四音上行
+        [[523.25, 0], [659.25, 0.07], [783.99, 0.14], [1046.5, 0.22]]
+          .forEach(([f, d]) => tone(f, 0.08, { delay: d, gain: 0.55 }));
+      }
+
+      function sfxOn() {                          // 開啟音效：兩音確認
+        tone(659.25, 0.05, { gain: 0.55 });
+        tone(987.77, 0.07, { delay: 0.05, gain: 0.55 });
+      }
+
+      /* ---------- 靜音狀態（記在 localStorage） ---------- */
+      function applyMute() {
+        toggle.classList.toggle('is-muted', muted);
+        toggle.setAttribute('aria-pressed', String(!muted));
+        if (master) master.gain.value = muted ? 0 : VOLUME;
+        try { localStorage.setItem('sfx-muted', muted ? '1' : '0'); } catch (err) { /* 略過 */ }
+      }
+
+      toggle.addEventListener('click', () => {
+        audio();
+        if (muted) {
+          muted = false;
+          applyMute();
+          sfxOn();
+        } else {
+          muted = true;
+          applyMute();
+        }
+      });
+
+      /* ---------- 第一次互動才解鎖音訊 ---------- */
+      function unlock() {
+        audio();
+        if (ctx && ctx.state === 'running') {
+          window.removeEventListener('pointerdown', unlock, true);
+          window.removeEventListener('keydown', unlock, true);
+          window.removeEventListener('touchstart', unlock, true);
+        }
+      }
+      ['pointerdown', 'keydown', 'touchstart'].forEach((type) => {
+        window.addEventListener(type, unlock, true);
+      });
+
+      /* ---------- Hover 音（只有滑鼠裝置） ---------- */
+      if (canHover) {
+        document.addEventListener('pointerover', (e) => {
+          if (!ctx || ctx.state !== 'running') return;
+          const el = e.target.closest('[data-sfx-hover]');
+          if (!el || el.contains(e.relatedTarget) || el === lastHover) return;
+          lastHover = el;
+          sfxHover();
+        });
+
+        document.addEventListener('pointerout', (e) => {
+          const el = e.target.closest('[data-sfx-hover]');
+          if (el && el === lastHover && !el.contains(e.relatedTarget)) lastHover = null;
+        });
+      }
+
+      /* ---------- 點擊音（事件代理，含鍵盤 Enter / 空白鍵） ---------- */
+      document.addEventListener('click', (e) => {
+        const el = e.target.closest('a, button');
+        if (!el || el === toggle) return;
+        audio();
+        if (el.dataset.sfx === 'mail') sfxMail();
+        else sfxPress();
+      });
+
+      applyMute();
+    })();
+  </script>
+
+  <script>
+    /* =================================================================
+       節點圖（Graph View）
+       - 依 我的資料.md 索引排列：中心 = 我的資料，外圈 = 10 個節點
+       - 每條線都對應 vault 內真實存在的 [[連結]]，沒有虛構關聯
+       - 點擊節點 → obsidian://open 直接開啟該則筆記
+       ================================================================= */
+    (() => {
+      'use strict';
+
+      const VAULT = '網頁';
+      const HUB = {
+        id: '我的資料',
+        label: '我的資料',
+        summary: '熱愛遊戲與技術，目標成為遊戲開發與網路工程師。'
+      };
+      const NODES = [
+        { id: '基本資料', label: '基本資料', summary: '名字、學校科系、年級、畢業年' },
+        { id: '求職方向', label: '求職方向', summary: '想找的職缺與地點' },
+        { id: '技能與證照', label: '技能與證照', summary: 'C++、Linux 與證照狀態' },
+        { id: '特質和例子', label: '特質和例子', summary: '別人對我的評價' },
+        { id: '興趣', label: '興趣', summary: '射擊遊戲與運動' },
+        { id: '公開聯絡方式', label: '聯絡方式', summary: '可公開的 Email' },
+        { id: '自傳素材', label: '自傳素材', summary: '自傳段落與一句話介紹' },
+        { id: '網站風格', label: '網站風格', summary: '喜歡的風格與顏色（待確認）' },
+        { id: '作品-待確認', label: '作品', summary: '尚無作品，欄位待補' },
+        { id: '經歷-校內展館-負責展館的看管與維護服務', label: '經歷', summary: '校內展館志工' }
+      ];
+
+      const graph = document.getElementById('graph');
+      const svg = graph && graph.querySelector('.graph-edges');
+      const readout = document.querySelector('#graphReadout .readout-text');
+      if (!graph || !svg || !readout) return;
+
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      const CX = 50, CY = 50, R = 37;
+
+      const encPath = (p) => p.split('/').map(encodeURIComponent).join('/');
+      const url = (file) =>
+        'obsidian://open?vault=' + encodeURIComponent(VAULT) + '&file=' + encPath(file);
+
+      function makeNode(n, x, y, isHub) {
+        const a = document.createElement('a');
+        a.className = 'gnode' + (isHub ? ' is-hub' : '');
+        a.href = url('我的資料/' + n.id);
+        a.title = n.id;
+        a.setAttribute('data-sfx-hover', '');
+        a.setAttribute('aria-label', n.id + '：' + n.summary);
+        a.style.left = x + '%';
+        a.style.top = y + '%';
+
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        const label = document.createElement('span');
+        label.className = 'glabel';
+        label.textContent = n.label;
+        a.append(dot, label);
+        graph.appendChild(a);
+        n.el = a;
+        return a;
+      }
+
+      const hubEl = makeNode(HUB, CX, CY, true);
+
+      NODES.forEach((n, i) => {
+        const rad = ((-90 + i * (360 / NODES.length)) * Math.PI) / 180;
+        const x = CX + Math.cos(rad) * R;
+        const y = CY + Math.sin(rad) * R;
+
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', CX);
+        line.setAttribute('y1', CY);
+        line.setAttribute('x2', x.toFixed(2));
+        line.setAttribute('y2', y.toFixed(2));
+        svg.appendChild(line);
+
+        n.line = line;
+        makeNode(n, x, y, false);
+      });
+
+      function clearState() {
+        graph.classList.remove('has-active');
+        hubEl.classList.remove('is-on');
+        NODES.forEach((n) => {
+          n.el.classList.remove('is-on');
+          n.line.classList.remove('is-on');
+        });
+      }
+
+      function showHub() {
+        clearState();
+        readout.textContent = HUB.id + ' — ' + HUB.summary;
+      }
+
+      function showAll() {
+        clearState();
+        graph.classList.add('has-active');
+        hubEl.classList.add('is-on');
+        NODES.forEach((n) => {
+          n.el.classList.add('is-on');
+          n.line.classList.add('is-on');
+        });
+        readout.textContent = HUB.id + ' — ' + HUB.summary;
+      }
+
+      function showNode(n) {
+        clearState();
+        graph.classList.add('has-active');
+        n.el.classList.add('is-on');
+        n.line.classList.add('is-on');
+        readout.textContent = n.id + ' — ' + n.summary;
+      }
+
+      hubEl.addEventListener('pointerenter', showAll);
+      hubEl.addEventListener('focus', showAll);
+
+      NODES.forEach((n) => {
+        n.el.addEventListener('pointerenter', () => showNode(n));
+        n.el.addEventListener('focus', () => showNode(n));
+      });
+
+      graph.addEventListener('pointerleave', () => {
+        const focused = NODES.find((n) => n.el === document.activeElement);
+        if (focused) showNode(focused);
+        else showHub();
+      });
+
+      graph.addEventListener('focusout', () => {
+        setTimeout(() => {
+          if (!graph.contains(document.activeElement)) showHub();
+        }, 0);
+      });
+    })();
+  </script>
+
+</body>
+</html>
